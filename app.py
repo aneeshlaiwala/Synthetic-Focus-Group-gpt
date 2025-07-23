@@ -1,4 +1,3 @@
-
 import streamlit as st
 import base64
 from io import BytesIO
@@ -12,7 +11,7 @@ st.set_page_config(page_title="FGD Generator", layout="wide")
 st.markdown("<h1 style='text-align: center; color: #6A1B9A;'>🎤 Synthetic Focus Group Discussion Generator</h1>", unsafe_allow_html=True)
 st.markdown("---")
 
-# Sidebar settings
+# Sidebar
 st.sidebar.header("🧠 AI Engine Settings")
 ai_tool = st.sidebar.selectbox("Select AI Tool", ["OpenAI", "Anthropic", "Google Gemini", "Mistral", "HuggingFace"])
 model_options = {
@@ -25,7 +24,7 @@ model_options = {
 model = st.sidebar.selectbox("Select Model", model_options[ai_tool])
 api_key = st.sidebar.text_input("Enter API Key", type="password")
 
-# Main Form
+# Main form
 st.subheader("📋 Discussion Setup")
 with st.form("fgd_form"):
     st.markdown("### 🗂️ Participant Composition")
@@ -35,7 +34,8 @@ with st.form("fgd_form"):
     with col2:
         male_count = st.number_input("🧔‍♂️ Male Participants", min_value=0, max_value=num_participants, value=2)
     with col3:
-        female_count = st.number_input("👩 Female Participants", min_value=0, max_value=num_participants - male_count, value=2)
+        female_max = num_participants - male_count
+        female_count = st.number_input("👩 Female Participants", min_value=0, max_value=female_max, value=2)
 
     nb_count = num_participants - male_count - female_count
     st.markdown(f"<div style='text-align:right; font-size:16px;'>🧑‍🎤 <span style='color:#9C27B0; font-weight:bold;'>Non-Binary Participants: {nb_count}</span></div>", unsafe_allow_html=True)
