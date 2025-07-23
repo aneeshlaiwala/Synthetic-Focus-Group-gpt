@@ -27,28 +27,41 @@ api_key = st.sidebar.text_input("Enter API Key", type="password")
 # Main Form
 st.subheader("📋 Discussion Setup")
 with st.form("fgd_form"):
-    col1, col2, col3 = st.columns(3)
+    st.markdown("### 🗂️ Participant Composition")
+    col1, col2, col3 = st.columns([1, 1, 1])
     with col1:
-        num_participants = st.number_input("Total Participants", min_value=2, max_value=20, value=6)
-        male_count = st.number_input("Male Participants", 0, num_participants, 2)
+        num_participants = st.number_input("👥 Total Participants", min_value=2, max_value=20, value=6)
     with col2:
-        female_count = st.number_input("Female Participants", 0, num_participants - male_count, 2)
+        male_count = st.number_input("👨 Male Participants", 0, num_participants, 2)
     with col3:
-        nb_count = num_participants - male_count - female_count
-        st.markdown(f"Non-Binary Participants: **{nb_count}**")
+        female_count = st.number_input("👩 Female Participants", 0, num_participants - male_count, 2)
 
-    age_range = st.text_input("Age Range", "25–35")
-    location = st.text_input("Location (City, Country)", "Mumbai, India")
-    language = st.multiselect("Languages", ["English", "Hindi", "Hinglish", "French"], default=["Hinglish"])
-    mode = st.selectbox("Discussion Mode", ["Online", "Offline"])
-    duration_min = st.slider("Duration (minutes)", 10, 120, 60)
+    nb_count = num_participants - male_count - female_count
+    st.markdown(f"""
+    <div style="text-align:right; font-size:16px; padding-top:5px;">
+    🧑‍🎤 <span style="color:#7B1FA2"><strong>Non-Binary Participants:</strong> {nb_count}</span>
+    </div>
+    """, unsafe_allow_html=True)
 
-    topic = st.text_input("Discussion Topic", "Electric Vehicles in Tier 2 Indian Cities")
-    demo_profile = st.text_area("Demographic Profile", "Mid-income professionals, mix of adopters and skeptics")
+    st.markdown("### 🌍 Group Profile & Session Settings")
+    col4, col5, col6 = st.columns([1, 1, 1])
+    with col4:
+        age_range = st.text_input("📅 Age Range", "25–35")
+    with col5:
+        location = st.text_input("📍 Location (City, Country)", "Mumbai, India")
+    with col6:
+        language = st.multiselect("🗣️ Language(s)", ["English", "Hindi", "Hinglish", "French"], default=["Hinglish"])
 
-    st.markdown("### 🧾 Study Objective")
-    study_objective = st.text_area("Write study objective", "")
-    uploaded_file = st.file_uploader("Or upload a file (.pdf, .docx, .txt)", type=["pdf", "docx", "txt"])
+    mode = st.selectbox("🧭 Mode of Discussion", ["Online", "Offline"])
+    duration_min = st.slider("⏱️ Duration (minutes)", 10, 120, 60)
+
+    st.markdown("### 🧩 Topic & Demographics")
+    topic = st.text_input("📌 Discussion Topic", "Electric Vehicles in Tier 2 Indian Cities")
+    demo_profile = st.text_area("👤 Demographic Profile", "Mid-income professionals, mix of adopters and skeptics")
+
+    st.markdown("### 📄 Study Objective")
+    study_objective = st.text_area("✍️ Write Study Objective", "")
+    uploaded_file = st.file_uploader("📎 Or Upload a File (.pdf, .docx, .txt)", type=["pdf", "docx", "txt"])
 
     if uploaded_file:
         if uploaded_file.type == "application/pdf":
@@ -64,8 +77,7 @@ with st.form("fgd_form"):
 # Prompt
 if submitted:
     word_count = int(duration_min * 140)
-    prompt = f"""
-You are an expert qualitative researcher and focus group moderator.
+    prompt = f"""You are an expert qualitative researcher and focus group moderator.
 
 Simulate a highly realistic and detailed synthetic focus group discussion (FGD) transcript.
 
@@ -97,15 +109,13 @@ Simulate a highly realistic and detailed synthetic focus group discussion (FGD) 
 --- RESEARCH REQUIREMENT ---
 Thoroughly research the discussion topic using multiple reputable sources specific to the location. Reflect realistic, localized views based on what people are actually discussing or facing in this region. Do not rely on generic or single-source assumptions.
 
-Format the output as a readable transcript with MODERATOR and PARTICIPANT names.
-    """.strip()
+Format the output as a readable transcript with MODERATOR and PARTICIPANT names."""
 
     st.markdown("### ✏️ Editable Prompt")
     final_prompt = st.text_area("You may revise the prompt before submission", prompt, height=400)
     st.session_state["final_prompt"] = final_prompt
 
     if st.button("🚀 Generate Transcript (Simulated Demo)"):
-        # DEMO OUTPUT (Replace with real API call later)
         demo_transcript = f"""
 MODERATOR: Welcome everyone. Let's introduce ourselves briefly.
 
