@@ -1,3 +1,4 @@
+
 import streamlit as st
 import base64
 from io import BytesIO
@@ -32,16 +33,12 @@ with st.form("fgd_form"):
     with col1:
         num_participants = st.number_input("👥 Total Participants", min_value=2, max_value=20, value=6)
     with col2:
-        male_count = st.number_input("👨 Male Participants", 0, num_participants, 2)
+        male_count = st.number_input("🧔‍♂️ Male Participants", min_value=0, max_value=num_participants, value=2)
     with col3:
-        female_count = st.number_input("👩 Female Participants", 0, num_participants - male_count, 2)
+        female_count = st.number_input("👩 Female Participants", min_value=0, max_value=num_participants - male_count, value=2)
 
     nb_count = num_participants - male_count - female_count
-    st.markdown(f"""
-    <div style="text-align:right; font-size:16px; padding-top:5px;">
-    🧑‍🎤 <span style="color:#7B1FA2"><strong>Non-Binary Participants:</strong> {nb_count}</span>
-    </div>
-    """, unsafe_allow_html=True)
+    st.markdown(f"<div style='text-align:right; font-size:16px;'>🧑‍🎤 <span style='color:#9C27B0; font-weight:bold;'>Non-Binary Participants: {nb_count}</span></div>", unsafe_allow_html=True)
 
     st.markdown("### 🌍 Group Profile & Session Settings")
     col4, col5, col6 = st.columns([1, 1, 1])
@@ -74,7 +71,6 @@ with st.form("fgd_form"):
 
     submitted = st.form_submit_button("Generate Prompt")
 
-# Prompt
 if submitted:
     word_count = int(duration_min * 140)
     prompt = f"""You are an expert qualitative researcher and focus group moderator.
@@ -116,8 +112,7 @@ Format the output as a readable transcript with MODERATOR and PARTICIPANT names.
     st.session_state["final_prompt"] = final_prompt
 
     if st.button("🚀 Generate Transcript (Simulated Demo)"):
-        demo_transcript = f"""
-MODERATOR: Welcome everyone. Let's introduce ourselves briefly.
+        demo_transcript = f"""MODERATOR: Welcome everyone. Let's introduce ourselves briefly.
 
 RAHUL (Male, 28): I'm Rahul from Dadar. I work as a software engineer. Curious about EVs.
 
@@ -127,16 +122,13 @@ AADI (Non-Binary, 26): Hello! I live in Thane and ride a scooter. Wondering if a
 
 ...
 
-MODERATOR: Thank you all for your views today. Your inputs on "{topic}" were incredibly helpful.
-        """.strip()
+MODERATOR: Thank you all for your views today. Your inputs on "{topic}" were incredibly helpful.""".strip()
 
         st.markdown("### 📄 Synthetic Transcript")
         st.text_area("Transcript", demo_transcript, height=300)
 
-        # TXT download
         st.download_button("⬇️ Download TXT", data=demo_transcript, file_name="transcript.txt", mime="text/plain")
 
-        # DOCX download
         doc = Document()
         doc.add_heading("Focus Group Discussion Transcript", 0)
         for line in demo_transcript.split("\n"):
