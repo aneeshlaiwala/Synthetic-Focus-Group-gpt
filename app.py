@@ -1,17 +1,17 @@
-# app.py
 import streamlit as st
 import base64
-from docx import Document
 from io import BytesIO
+from docx import Document
+from docx.shared import Pt
+from PyPDF2 import PdfReader
+import docx2txt
 
-# Page config
-st.set_page_config(page_title="Synthetic FGD Generator", layout="wide")
-
-# Title
-st.markdown("<h1 style='text-align: center; color: #6A1B9A;'>🧠 Synthetic Focus Group Discussion Generator</h1>", unsafe_allow_html=True)
+# Page setup
+st.set_page_config(page_title="FGD Generator", layout="wide")
+st.markdown("<h1 style='text-align: center; color: #6A1B9A;'>🎤 Synthetic Focus Group Discussion Generator</h1>", unsafe_allow_html=True)
 st.markdown("---")
 
-# Sidebar
+# Sidebar settings
 st.sidebar.header("🧠 AI Engine Settings")
 ai_tool = st.sidebar.selectbox("Select AI Tool", ["OpenAI", "Anthropic", "Google Gemini", "Mistral", "HuggingFace"])
 model_options = {
@@ -24,83 +24,116 @@ model_options = {
 model = st.sidebar.selectbox("Select Model", model_options[ai_tool])
 api_key = st.sidebar.text_input("Enter API Key", type="password")
 
-# Main input form
-st.subheader("👥 Participant & Session Details")
+# Main Form
+st.subheader("📋 Discussion Setup")
 with st.form("fgd_form"):
     col1, col2, col3 = st.columns(3)
     with col1:
-        num_participants = st.number_input("Number of Participants", 2, 20, 6)
-        male_count = st.number_input("Male Participants", 0, num_participants, 3)
-        female_count = num_participants - male_count
+        num_participants = st.number_input("Total Participants", min_value=2, max_value=20, value=6)
+        male_count = st.number_input("Male Participants", 0, num_participants, 2)
     with col2:
-        age_range = st.text_input("Age Range", "25–35")
-        location = st.text_input("Participant Location", "Mumbai, India")
+        female_count = st.number_input("Female Participants", 0, num_participants - male_count, 2)
     with col3:
-        language = st.multiselect("Discussion Language(s)", ["English", "Hindi", "Hinglish", "French"], default=["Hinglish"])
-        mode = st.selectbox("Discussion Mode", ["Online", "Offline"])
-        duration_min = st.slider("Discussion Duration (minutes)", 10, 120, 60)
+        nb_count = num_participants - male_count - female_count
+        st.markdown(f"Non-Binary Participants: **{nb_count}**")
+
+    age_range = st.text_input("Age Range", "25–35")
+    location = st.text_input("Location (City, Country)", "Mumbai, India")
+    language = st.multiselect("Languages", ["English", "Hindi", "Hinglish", "French"], default=["Hinglish"])
+    mode = st.selectbox("Discussion Mode", ["Online", "Offline"])
+    duration_min = st.slider("Duration (minutes)", 10, 120, 60)
 
     topic = st.text_input("Discussion Topic", "Electric Vehicles in Tier 2 Indian Cities")
-    demographic_profile = st.text_area("Demographic Profile", "Mid-income professionals, EV-aware, mix of adopters and skeptics")
-    study_objective = st.text_area("Study Objective", "Understand attitudes, barriers, and motivations for EV adoption.")
-    submitted = st.form_submit_button("🔍 Generate Prompt")
+    demo_profile = st.text_area("Demographic Profile", "Mid-income professionals, mix of adopters and skeptics")
 
-# Prompt builder
+    st.markdown("### 🧾 Study Objective")
+    study_objective = st.text_area("Write study objective", "")
+    uploaded_file = st.file_uploader("Or upload a file (.pdf, .docx, .txt)", type=["pdf", "docx", "txt"])
+
+    if uploaded_file:
+        if uploaded_file.type == "application/pdf":
+            reader = PdfReader(uploaded_file)
+            study_objective += "\n\n" + "\n".join([page.extract_text() for page in reader.pages])
+        elif uploaded_file.type == "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
+            study_objective += "\n\n" + docx2txt.process(uploaded_file)
+        else:
+            study_objective += "\n\n" + uploaded_file.read().decode("utf-8")
+
+    submitted = st.form_submit_button("Generate Prompt")
+
+# Prompt
 if submitted:
-    estimated_words = int(duration_min * 140)
+    word_count = int(duration_min * 140)
     prompt = f"""
-You are an expert qualitative researcher. Simulate a synthetic focus group discussion transcript based on the following details:
+You are an expert qualitative researcher and focus group moderator.
 
+Simulate a highly realistic and detailed synthetic focus group discussion (FGD) transcript.
+
+--- PARTICIPANT PROFILE ---
+- Total Participants: {num_participants} ({male_count} male, {female_count} female, {nb_count} non-binary)
+- Age Range: {age_range}
 - Location: {location}
-- Number of participants: {num_participants} ({male_count} male, {female_count} female)
-- Age range: {age_range}
-- Languages: {", ".join(language)}
+- Demographic: {demo_profile}
+- Languages spoken: {', '.join(language)}
 - Mode: {mode}
-- Duration: {duration_min} minutes (~{estimated_words} words)
-- Topic: {topic}
-- Demographic profile: {demographic_profile}
-- Study objective: {study_objective}
+- Duration: {duration_min} minutes (~{word_count} words)
+- Discussion Topic: {topic}
+- Study Objective: {study_objective.strip()}
 
-Structure the discussion into:
-1. Opening (introductions, ground rules)
-2. Warm-up
-3. Core discussion with moderator and participant interactions
-4. Closing summary
+--- STRUCTURE TO FOLLOW ---
+1. Opening (welcome, intros, ground rules, consent)
+2. Warm-up (icebreaker, general thoughts)
+3. Core Discussion (key Qs, probing, opposing views)
+4. Closing (summary, final comments, thank you)
 
-Use realistic participant names from {location}. Include occasional slang, dialect, or minor grammar imperfections based on language mix. Output as a natural, readable transcript.
+--- MODERATOR BEHAVIOR ---
+- Remain neutral and professional
+- Use natural transitions
+- Encourage quieter participants
+- Handle dominant voices politely
+- Use real participant names typical of {location}
+- Allow grammatical imperfections and local dialects
 
-Ensure moderator remains neutral and encourages varied viewpoints.
-    """
-    st.markdown("### 🧾 Prompt (editable before submission)")
-    edited_prompt = st.text_area("✏️ Edit Prompt if Needed", prompt, height=300)
-    st.session_state["final_prompt"] = edited_prompt
+--- RESEARCH REQUIREMENT ---
+Thoroughly research the discussion topic using multiple reputable sources specific to the location. Reflect realistic, localized views based on what people are actually discussing or facing in this region. Do not rely on generic or single-source assumptions.
 
-    if st.button("🚀 Generate Transcript (Demo Mode)"):
-        # Simulated result
-        transcript = f"""
-MODERATOR: Welcome everyone! Let’s start by introducing ourselves.
+Format the output as a readable transcript with MODERATOR and PARTICIPANT names.
+    """.strip()
 
-RAHUL (Male, 28): Hi, I’m Rahul from Andheri. I work in IT. Glad to be here!
+    st.markdown("### ✏️ Editable Prompt")
+    final_prompt = st.text_area("You may revise the prompt before submission", prompt, height=400)
+    st.session_state["final_prompt"] = final_prompt
 
-SUNITA (Female, 31): Hello! I’m Sunita, a school teacher. I’ve always been curious about electric vehicles...
+    if st.button("🚀 Generate Transcript (Simulated Demo)"):
+        # DEMO OUTPUT (Replace with real API call later)
+        demo_transcript = f"""
+MODERATOR: Welcome everyone. Let's introduce ourselves briefly.
+
+RAHUL (Male, 28): I'm Rahul from Dadar. I work as a software engineer. Curious about EVs.
+
+SNEHA (Female, 30): Hi! I'm Sneha. I’ve started thinking about switching to an EV recently.
+
+AADI (Non-Binary, 26): Hello! I live in Thane and ride a scooter. Wondering if an EV makes sense...
 
 ...
 
-MODERATOR: Thank you all for your insights today. This was a great discussion on {topic}.
+MODERATOR: Thank you all for your views today. Your inputs on "{topic}" were incredibly helpful.
         """.strip()
 
-        st.markdown("### 📄 Generated Transcript")
-        st.text_area("Transcript", transcript, height=300)
+        st.markdown("### 📄 Synthetic Transcript")
+        st.text_area("Transcript", demo_transcript, height=300)
 
-        # .txt download
-        b64_txt = base64.b64encode(transcript.encode()).decode()
-        st.download_button("⬇️ Download TXT", data=transcript, file_name="transcript.txt", mime="text/plain")
+        # TXT download
+        st.download_button("⬇️ Download TXT", data=demo_transcript, file_name="transcript.txt", mime="text/plain")
 
-        # .docx download
+        # DOCX download
         doc = Document()
-        doc.add_heading("Focus Group Transcript", 0)
-        for line in transcript.split("\n"):
-            doc.add_paragraph(line.strip())
+        doc.add_heading("Focus Group Discussion Transcript", 0)
+        for line in demo_transcript.split("\n"):
+            para = doc.add_paragraph(line.strip())
+            if "MODERATOR:" in line:
+                para.runs[0].bold = True
+            para.style.font.size = Pt(11)
         buffer = BytesIO()
         doc.save(buffer)
         buffer.seek(0)
